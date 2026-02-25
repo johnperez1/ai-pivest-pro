@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI-PIVEST Pi Blockchain DApp</title>
+    <!-- Pi Network SDK -->
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        /* ... YOUR STYLE CODE FROM ABOVE ... (unchanged, omitted for brevity) ... */
+    </style>
+</head>
+<body>
+
+<!-- COVER PAGE / SIGN IN -->
+<div id="cover-page">
+    <div class="grid-bg"></div>
+    <div class="scan-line"></div>
+    <div class="cover-content">
+        <div class="cover-logo">🥧</div>
+        <div class="cover-title">AI-PIVEST</div>
+        <div class="cover-subtitle">Decentralized Intelligence</div>
+        <div class="login-form">
+            <div class="input-group">
+                <span class="input-label">Node Status</span>
+                <div class="fake-input"><span id="nodeStatus">...Checking...</span><span id="nodeDot" style="color:var(--text-muted);">●</span></div>
+            </div>
+            <div class="input-group">
+                <span class="input-label">Identity</span>
+                <div class="fake-input">
+                    <span id="userIdent">▬▬▬</span>
+                    <span>🆔</span>
+                </div>
+            </div>
+            <button class="enter-btn" id="authBtn">Authenticate & Enter</button>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+    <header>
+        <div class="logo">🥧 AI-<span>PIVEST</span></div>
+        <div class="status-badge">
+            <div class="status-dot"></div>PI Blockchain
+        </div>
+    </header>
+    <main id="content">
+        <div id="dashboard" class="page active">
+            <button class="pi-connect" id="walletBtn">
+                🔗 Connect Pi Wallet
+            </button>
+            <div class="card">
+                <h3 style="margin-top:0; display:flex; justify-content:space-between;">
+                    Portfolio Value
+                    <span style="font-size:0.8em; color:var(--text-muted)">AI Est.</span>
+                </h3>
+                <div style="font-size: 2.5rem; font-weight: 800; color: var(--text-main);">
+                    <span id="portfolioValue">3,141.59</span> π
+                </div>
+                <div style="color: var(--success); margin-top: 5px;">
+                    ▲ 12.4% (24h)
+                </div>
+            </div>
+            <h3 style="margin-left: 5px; margin-bottom: 10px;">Live Metrics</h3>
+            <div class="metric-grid">
+                <div class="metric-item"><div class="metric-label">Token Price</div><div class="metric-value" id="priceValue">$42.00</div></div>
+                <div class="metric-item"><div class="metric-label">24h Volume</div><div class="metric-value">2.4M π</div></div>
+                <div class="metric-item"><div class="metric-label">All Time High</div><div class="metric-value up">$314.15</div></div>
+                <div class="metric-item"><div class="metric-label">Pioneers</div><div class="metric-value">1,590,000</div></div>
+            </div>
+        </div>
+        <!-- Add more pages or features below as needed -->
+    </main>
+    <!-- Bottom Nav could go here -->
+</div>
+
+<!-- --- PI NETWORK & APP LOGIC --- -->
+<script>
+/** Pi DApp SDK Core Integration **/
+
+// Show and hide app container after login
+function showApp() {
+    document.getElementById("cover-page").classList.add("hidden");
+    document.getElementById("app").classList.add("app-visible");
+}
+
+// -------- 1. Pi SDK AUTH ---------
+const pi = window.Pi;
+let piUser = null;
+
+function updatePiStatus(connected, username = null) {
+    // Visual feedback on state
+    document.getElementById("nodeStatus").innerText = connected ? "Connected" : "Not Connected";
+    document.getElementById("nodeDot").style.color = connected ? "#10b981" : "#ef4444";
+    document.getElementById("authBtn").innerText = connected ? "Enter Dashboard" : "Authenticate & Enter";
+    document.getElementById("userIdent").innerText = username ? username : "▬▬▬";
+}
+
+// Attempt silent authentication
+function piAutoLogin() {
+    if(!pi) {
+        updatePiStatus(false);
+        return;
+    }
+    pi.authenticate({permissions: ['username', 'payments']}
+    ).then(({user, accessToken})=>{
+        piUser = user;
+        updatePiStatus(true, user.username);
+        showApp();
+    }).catch(()=>{
+        updatePiStatus(false);
+    });
+}
+
+document.getElementById("authBtn").onclick = function() {
+    if(!pi) { alert("Pi SDK not loaded."); return; }
+    pi.authenticate({permissions: ['username', 'payments']})
+      .then(({user, accessToken}) => {
+        piUser = user;
+        updatePiStatus(true, user.username);
+        showApp();
+      })
+      .catch((err) => {
+        alert("Pi account authentication failed.");
+        updatePiStatus(false);
+      });
+};
+
+// Try silent detection on load
+window.addEventListener("load", piAutoLogin);
+
+// -------- 2. Pi Wallet Connection Example ---------
+document.getElementById("walletBtn").onclick = function() {
+    if(!piUser) { alert("Log in first!"); return; }
+    // Demonstration: Initiate payment of 3.14 π
+    pi.createPayment({
+      // See: Pi payment flow docs
+      amount: 3.14,
+      memo: "AI-PIVEST test payment",
+      metadata: { type: "demo", user: piUser.username }
+    }, {
+      onReadyForServerApproval: function(paymentId) {
+        alert("Payment ready for server approval. PaymentId: " + paymentId);
+      },
+      onReadyForServerCompletion: function(paymentId, txid) {
+        alert("Payment completed! Txid: " + txid);
+      },
+      onCancel: function(paymentId) {
+        alert("Payment cancelled.");
+      },
+      onError: function(error, payment) {
+        alert("Payment error: " + error);
+      }
+    });
+};
+
+// ------- SAMPLE: You can now export any SDK logic -------
+window.AIPivestPiSDK = {
+    login: () => pi.authenticate({permissions: ['username','payments']}),
+    connectWallet: () => pi.createPayment({amount:3.14, memo:"AIPIVEST SDK EXAMPLE"}),
+};
+
+/*
+    To use as an SDK module in another app:
+    <script src="AIPivestPiSDK.js"></script>
+
+    window.AIPivestPiSDK.login().then(...);
+    window.AIPivestPiSDK.connectWallet
+().then(...);
+
+    // Extend, modularize, or export as npm package if making a fully reusable SDK!
+*/
+</script>
+</body>
+</html>
