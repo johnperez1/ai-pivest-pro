@@ -2,15 +2,379 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI-PIVEST PRO</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI-PIVEST Pi Blockchain DApp</title>
+    <!-- Pi Network SDK -->
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-card: #111827;
+            --bg-card2: #1a2235;
+            --accent: #7c3aed;
+            --accent2: #06b6d4;
+            --text-main: #e2e8f0;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: #1e2d3d;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Cover page */
+        #cover-page {
+            position: fixed; inset: 0;
+            background: var(--bg-dark);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100;
+            transition: opacity 0.4s ease;
+        }
+        #cover-page.hidden { display: none; }
+
+        .grid-bg {
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        .scan-line {
+            position: absolute; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent2), transparent);
+            animation: scan 3s linear infinite;
+            opacity: 0.4;
+        }
+        @keyframes scan {
+            0%   { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .cover-content {
+            position: relative; z-index: 1;
+            text-align: center;
+            padding: 2rem;
+            max-width: 380px;
+            width: 100%;
+        }
+        .cover-logo { font-size: 3.5rem; margin-bottom: 0.5rem; }
+        .cover-title {
+            font-size: 2.2rem; font-weight: 900;
+            letter-spacing: 0.15em;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .cover-subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            letter-spacing: 0.25em;
+            margin: 0.5rem 0 1.5rem;
+        }
+
+        .login-form { display: flex; flex-direction: column; gap: 1rem; }
+        .input-group { text-align: left; }
+        .input-label {
+            display: block;
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+            text-transform: uppercase;
+        }
+        .fake-input {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.6rem 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+        }
+
+        .enter-btn {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 0.85rem;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.05em;
+            transition: opacity 0.2s;
+        }
+        .enter-btn:hover { opacity: 0.88; }
+
+        /* Main app */
+        #app { display: none; flex-direction: column; min-height: 100vh; }
+        #app.app-visible { display: flex; }
+
+        header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 900;
+            letter-spacing: 0.06em;
+        }
+        .logo span { color: var(--accent2); }
+
+        .status-badge {
+            display: flex; align-items: center; gap: 0.4rem;
+            background: var(--bg-card2);
+            border: 1px solid var(--border);
+            border-radius: 99px;
+            padding: 0.3rem 0.8rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.3; }
+        }
+
+        main { flex: 1; padding: 1rem; max-width: 600px; margin: 0 auto; width: 100%; }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .pi-connect {
+            width: 100%;
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            border-radius: 10px;
+            padding: 0.75rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            transition: background 0.2s, color 0.2s;
+        }
+        .pi-connect:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+        .metric-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.9rem;
+        }
+        .metric-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.3rem;
+        }
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+        .metric-value.up { color: var(--success); }
+    </style>
 </head>
 <body>
-    <h1>Welcome to AI-PIVEST PRO</h1>
-    <p>Your complete AI trading solution.</p>
-    <footer>
-        <a href="/privacy-policy">Privacy Policy</a>
-        <a href="/terms-of-service">Terms of Service</a>
-    </footer>
+
+<!-- COVER PAGE / SIGN IN -->
+<div id="cover-page">
+    <div class="grid-bg"></div>
+    <div class="scan-line"></div>
+    <div class="cover-content">
+        <div class="cover-logo">🥧</div>
+        <div class="cover-title">AI-PIVEST</div>
+        <div class="cover-subtitle">Decentralized Intelligence</div>
+        <div class="login-form">
+            <div class="input-group">
+                <span class="input-label">Node Status</span>
+                <div class="fake-input"><span id="nodeStatus">...Checking...</span><span id="nodeDot" style="color:var(--text-muted);">●</span></div>
+            </div>
+            <div class="input-group">
+                <span class="input-label">Identity</span>
+                <div class="fake-input">
+                    <span id="userIdent">▬▬▬</span>
+                    <span>🆔</span>
+                </div>
+            </div>
+            <button class="enter-btn" id="authBtn">Authenticate &amp; Enter</button>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+    <header>
+        <div class="logo">🥧 AI-<span>PIVEST</span></div>
+        <div class="status-badge">
+            <div class="status-dot"></div>PI Blockchain
+        </div>
+    </header>
+    <main id="content">
+        <div id="dashboard" class="page active">
+            <button class="pi-connect" id="walletBtn">
+                🔗 Connect Pi Wallet
+            </button>
+            <div class="card">
+                <h3 style="margin-top:0; display:flex; justify-content:space-between;">
+                    Portfolio Value
+                    <span style="font-size:0.8em; color:var(--text-muted)">AI Est.</span>
+                </h3>
+                <div style="font-size: 2.5rem; font-weight: 800; color: var(--text-main);">
+                    <span id="portfolioValue">3,141.59</span> π
+                </div>
+                <div style="color: var(--success); margin-top: 5px;">
+                    ▲ 12.4% (24h)
+                </div>
+            </div>
+            <h3 style="margin-left: 5px; margin-bottom: 10px;">Live Metrics</h3>
+            <div class="metric-grid">
+                <div class="metric-item"><div class="metric-label">Token Price</div><div class="metric-value" id="priceValue">$42.00</div></div>
+                <div class="metric-item"><div class="metric-label">24h Volume</div><div class="metric-value">2.4M π</div></div>
+                <div class="metric-item"><div class="metric-label">All Time High</div><div class="metric-value up">$314.15</div></div>
+                <div class="metric-item"><div class="metric-label">Pioneers</div><div class="metric-value">1,590,000</div></div>
+            </div>
+        </div>
+        <!-- Add more pages or features below as needed -->
+    </main>
+    <!-- Bottom Nav could go here -->
+</div>
+
+<!-- --- PI NETWORK & APP LOGIC --- -->
+<script>
+/** Pi DApp SDK Core Integration **/
+
+// Show and hide app container after login
+function showApp() {
+    document.getElementById("cover-page").classList.add("hidden");
+    document.getElementById("app").classList.add("app-visible");
+}
+
+// -------- 1. Pi SDK AUTH ---------
+const pi = window.Pi;
+let piUser = null;
+
+function updatePiStatus(connected, username = null) {
+    // Visual feedback on state
+    document.getElementById("nodeStatus").innerText = connected ? "Connected" : "Not Connected";
+    document.getElementById("nodeDot").style.color = connected ? "#10b981" : "#ef4444";
+    document.getElementById("authBtn").innerText = connected ? "Enter Dashboard" : "Authenticate & Enter";
+    document.getElementById("userIdent").innerText = username ? username : "▬▬▬";
+}
+
+// Attempt silent authentication
+function piAutoLogin() {
+    if(!pi) {
+        updatePiStatus(false);
+        return;
+    }
+    pi.authenticate({permissions: ['username', 'payments']}
+    ).then(({user, accessToken})=>{
+        piUser = user;
+        updatePiStatus(true, user.username);
+        showApp();
+    }).catch(()=>{
+        updatePiStatus(false);
+    });
+}
+
+document.getElementById("authBtn").onclick = function() {
+    if(!pi) { alert("Pi SDK not loaded."); return; }
+    pi.authenticate({permissions: ['username', 'payments']})
+      .then(({user, accessToken}) => {
+        piUser = user;
+        updatePiStatus(true, user.username);
+        showApp();
+      })
+      .catch((err) => {
+        alert("Pi account authentication failed.");
+        updatePiStatus(false);
+      });
+};
+
+// Try silent detection on load
+window.addEventListener("load", piAutoLogin);
+
+// -------- 2. Pi Wallet Connection Example ---------
+document.getElementById("walletBtn").onclick = function() {
+    if(!piUser) { alert("Log in first!"); return; }
+    // Demonstration: Initiate payment of 3.14 π
+    pi.createPayment({
+      // See: Pi payment flow docs
+      amount: 3.14,
+      memo: "AI-PIVEST test payment",
+      metadata: { type: "demo", user: piUser.username }
+    }, {
+      onReadyForServerApproval: function(paymentId) {
+        alert("Payment ready for server approval. PaymentId: " + paymentId);
+      },
+      onReadyForServerCompletion: function(paymentId, txid) {
+        alert("Payment completed! Txid: " + txid);
+      },
+      onCancel: function(paymentId) {
+        alert("Payment cancelled.");
+      },
+      onError: function(error, payment) {
+        alert("Payment error: " + error);
+      }
+    });
+};
+
+// ------- SAMPLE: You can now export any SDK logic -------
+window.AIPivestPiSDK = {
+    login: () => pi.authenticate({permissions: ['username','payments']}),
+    connectWallet: () => pi.createPayment({amount:3.14, memo:"AIPIVEST SDK EXAMPLE"}),
+};
+
+/*
+    To use as an SDK module in another app:
+    <script src="AIPivestPiSDK.js"></script>
+
+    window.AIPivestPiSDK.login().then(...);
+    window.AIPivestPiSDK.connectWallet().then(...);
+
+    // Extend, modularize, or export as npm package if making a fully reusable SDK!
+*/
+</script>
 </body>
 </html>
